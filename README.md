@@ -65,43 +65,7 @@ The sample has four logical runtime entities:
 
 IBM Verify also contains the configuration objects used by the flow, including the human subject application, Agent identity, Agent OAuth application, Token Exchange application, and Authorization Details Type.
 
-```text
-+--------------------+          +----------------------------------+
-| Human User         |          | IBM Verify                       |
-| browser / chat     |          |                                  |
-+---------+----------+          |  Subject OIDC Application        |
-          |                     |                                  |
-          |                     |  Agent Identity / Agent Registry |
-          |                     |          +                       |
-          |                     |  Agent OAuth Application         |
-          |                     |                                  |
-          |                     |  STS / Token Exchange Application|
-          |                     |                                  |
-          |                     |  Authorization Details Type      |
-          |                     |  and authorization policy        |
-          |                     +----------------+-----------------+
-          |                                      ^
-          v                                      |
-+---------+--------------------------------------+---+
-| Course Agent Application                          |
-|                                                   |
-|  app.py          -> runtime orchestration          |
-|  llm_agent.py    -> intent / action selection      |
-|  rar_builder.py  -> authorization details          |
-|  verify_oauth.py -> subject, actor and token       |
-|                     exchange flows                 |
-+--------------------------+------------------------+
-                           |
-                           | delegated access token
-                           v
-                  +--------+---------+
-                  | Course API       |
-                  |                  |
-                  | token validation |
-                  | authorization    |
-                  | course operation |
-                  +------------------+
-```
+![Sample architecture](images/sample_architecture.png)
 
 The **Course Agent Application** is the runtime component that performs the OAuth protocol operations. The **Agent Identity** in IBM Verify is the governed identity of the AI agent; it does not itself execute code. The **Agent OAuth Application** provides the credentials that the Course Agent Application uses to obtain the actor token.
 
@@ -312,25 +276,6 @@ Associating the OAuth application with the Agent Registry record allows IBM Veri
 
 This association is important for operational governance and audit because OAuth client credentials can be rotated or replaced while the Agent identity remains stable. The Agent Registry therefore provides a durable identity and correlation point for tracking which governed agent is associated with runtime activity.
 
-Conceptually:
-
-```text
-Agent Registry record
-        |
-        | Agent ID = stable governed identity
-        |
-        +------ associated with ------+
-                                   |
-                                   v
-                         Agent OAuth application
-                                   |
-                                   | client credentials
-                                   v
-                             Actor access token
-                                   |
-                                   v
-                       Token Exchange / runtime activity
-```
 
 ### Onboard the agent
 
@@ -1281,24 +1226,7 @@ Entity ID   = <AGENT_ID>
 
 `Entity ID` identifies the governed Agent Registry record created earlier in this tutorial.
 
-This demonstrates the distinction between the OAuth runtime identity and the governed Agent identity:
-
-```text
-Agent OAuth application
-        |
-        | client_id / client credentials
-        v
-Actor access token
-        |
-        | associated by IBM Verify
-        v
-Agent Registry entity
-        |
-        | Entity type = agent
-        | Entity ID   = AGENT_ID
-        v
-Governed AI Agent
-```
+This demonstrates the distinction between the OAuth runtime identity and the governed Agent identity.
 
 The OAuth client ID can be rotated or replaced as runtime credentials evolve, while the Agent Registry record provides the governed identity representing the AI agent.
 
@@ -1345,40 +1273,6 @@ The Token Exchange event therefore represents the runtime delegated authorizatio
 ### Understanding the complete audit trail
 
 The three records represent different stages of the same agentic authorization scenario:
-
-```text
-Human User
-   |
-   | Authorization Code + PKCE
-   v
-Subject authentication
-UC1_subject_token
-   |
-   | subject access token
-   |
-   +-----------------------------+
-                                 |
-Agent OAuth application          |
-   |                             |
-   | Client Credentials          |
-   v                             |
-Actor access token               |
-   |                             |
-   | Entity type = agent         |
-   | Entity ID = AGENT_ID        |
-   |                             |
-   +-------------+---------------+
-                 |
-                 v
-        OAuth 2.0 Token Exchange
-        UC1 Course Agent Token Exchange
-                 |
-                 v
-        Delegated access token
-                 |
-                 v
-              Course API
-```
 
 This gives administrators two complementary views of the Agent:
 
