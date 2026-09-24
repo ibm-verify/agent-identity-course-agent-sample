@@ -5,6 +5,7 @@
   "displayName": "UC1 Course Conversational Agent",
   "description": "Conversational AI agent that invokes protected course tools",
   "permissions": [],
+  "status":"SUSPENDED",
   "tags": [
     "course-agent",
     "direct-tools",

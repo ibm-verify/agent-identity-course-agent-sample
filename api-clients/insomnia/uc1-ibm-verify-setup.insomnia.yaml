@@ -1,0 +1,286 @@
+type: collection.insomnia.rest/5.0
+schema_version: "5.1"
+name: UC1 IBM Verify Setup
+meta:
+  id: wrk_9ff9f25f10e84ef9b3a766b12a4f3fd9
+  created: 1788957978454
+  modified: 1788957978454
+  description: ""
+collection:
+  - url: "{{TENANT}}/oauth2/register"
+    name: 02 - DCR - Create Actor Client
+    meta:
+      id: req_b2ac50486a754482a0afdda71123f73d
+      created: 1788352743308
+      modified: 1788353787776
+      isPrivate: false
+      description: ""
+      sortKey: -5500
+    method: POST
+    body:
+      mimeType: text/plain
+      text: |-
+        {
+          "client_name": "UC1 Course Conversational Agent",
+          "grant_types": [
+            "client_credentials"
+          ],
+          "scope": "agent.run",
+          "token_endpoint_auth_method": "client_secret_post"
+        }
+    headers:
+      - name: Content-Type
+        value: text/plain
+      - name: Authorization
+        value: Bearer {{ADMIN_ACCESS_TOKEN}}
+        description: ""
+        disabled: false
+    authentication:
+      type: none
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{TENANT}}/v1.0/Agents"
+    name: 03 - Onboard Agent
+    meta:
+      id: req_aa4a6e696bd04c84928ccc81437524c9
+      created: 1788353274883
+      modified: 1788356024742
+      isPrivate: false
+      description: ""
+      sortKey: -5250
+    method: POST
+    body:
+      mimeType: text/plain
+      text: >-
+        {
+          "schemas": [
+            "urn:ietf:params:scim:schemas:core:ibm:2.0:Agent"
+          ],
+          "displayName": "UC1 Course Conversational Agent",
+          "description": "Conversational AI agent with direct protected course tools",
+          "permissions": [],
+          "tags": [
+            "course-agent",
+            "direct-tools",
+            "conversational-ai"
+          ]
+        }
+    headers:
+      - name: Content-Type
+        value: text/plain
+        disabled: true
+      - name: Authorization
+        value: Bearer {{ADMIN_ACCESS_TOKEN}}
+        description: ""
+        disabled: false
+      - name: Accept
+        value: application/scim+json
+        description: ""
+        disabled: false
+      - name: Content-Type
+        value: application/scim+json
+        description: ""
+        disabled: false
+    authentication:
+      type: none
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{TENANT}}/oauth2/register/{{ACTOR_CLIENT_ID}}"
+    name: 05 - DCR - Associate Actor Client with Agent
+    meta:
+      id: req_1fd812543d2347f5a5eb13a439af8b3d
+      created: 1788354107150
+      modified: 1788958110515
+      isPrivate: false
+      description: ""
+      sortKey: -5125
+    method: PUT
+    body:
+      mimeType: text/plain
+      text: |-
+        {
+          "client_name": "UC1 Course Conversational Agent",
+          "grant_types": [
+            "client_credentials"
+          ],
+          "extension": {
+            "entity_id": "{{AGENT_ID}}",
+            "entity_type": "agent"
+          },
+          "scope": "agent.run",
+          "token_endpoint_auth_method": "client_secret_post"
+        }
+    headers:
+      - name: Content-Type
+        value: text/plain
+        disabled: true
+      - name: Authorization
+        value: Bearer {{ADMIN_ACCESS_TOKEN}}
+        description: ""
+        disabled: false
+      - name: Accept
+        value: application/scim+json
+        description: ""
+        disabled: true
+      - name: Content-Type
+        value: application/json
+        description: ""
+        disabled: false
+    authentication:
+      type: none
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{TENANT}}/v1.0/Agents/{{AGENT_ID }}"
+    name: 06 - Activate Agent
+    meta:
+      id: req_605c06e2e021400c860d908bcfaba8a8
+      created: 1788369574857
+      modified: 1788958056869
+      isPrivate: false
+      description: ""
+      sortKey: -5062.5
+    method: PUT
+    body:
+      mimeType: text/plain
+      text: >-
+        {
+          "schemas": [
+            "urn:ietf:params:scim:schemas:core:ibm:2.0:Agent"
+          ],
+          "displayName": "UC1 Course Conversational Agent",
+          "description": "Conversational AI agent with direct protected course tools",
+          "permissions": [],
+          "status":"ACTIVE",
+          "tags": [
+            "course-agent",
+            "direct-tools",
+            "conversational-ai"
+          ]
+        }
+    headers:
+      - name: Content-Type
+        value: text/plain
+        disabled: true
+      - name: Authorization
+        value: Bearer {{ADMIN_ACCESS_TOKEN}}
+        description: ""
+        disabled: false
+      - name: Accept
+        value: application/scim+json
+        description: ""
+        disabled: true
+      - name: Content-Type
+        value: application/scim+json
+        description: ""
+        disabled: false
+    authentication:
+      type: none
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{TENANT}}/v1.0/Agents"
+    name: 04 Get Agent Details
+    meta:
+      id: req_34b61f7b61e14dc2a5bc4c81ee45aa86
+      created: 1788957976175
+      modified: 1788356193890
+      isPrivate: false
+      description: ""
+      sortKey: -5187.5
+    method: GET
+    body:
+      mimeType: application/x-www-form-urlencoded
+      text: ""
+    headers:
+      - name: Authorization
+        value: Bearer {{ADMIN_ACCESS_TOKEN}}
+      - name: Accept
+        value: application/scim+json
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+  - url: "{{TENANT}}/oauth2/token"
+    name: 01 - Get Admin Access Token
+    meta:
+      id: req_ba670d659a0a4d228ffe50260ac0013a
+      created: 1788957976175
+      modified: 1788353473342
+      isPrivate: false
+      description: ""
+      sortKey: -6000
+    method: POST
+    body:
+      mimeType: application/x-www-form-urlencoded
+      params:
+        - name: grant_type
+          value: client_credentials
+          description: ""
+          disabled: false
+        - name: client_id
+          value: "{{VERIFY_ADMIN_CLIENT_ID}}"
+          description: ""
+          disabled: false
+          multiline: false
+          type: text
+        - name: client_secret
+          value: "{{VERIFY_ADMIN_CLIENT_SECRET}}"
+          description: ""
+          disabled: false
+    headers:
+      - name: Content-Type
+        value: application/x-www-form-urlencoded
+    authentication:
+      type: none
+    settings:
+      renderRequestBody: true
+      encodeUrl: true
+      followRedirects: global
+      cookies:
+        send: true
+        store: true
+      rebuildPath: true
+cookieJar:
+  name: Default Jar
+  meta:
+    id: jar_36b52eceed8e464dbb2de8dd6394e8de
+    created: 1788352083461
+    modified: 1788356040178
+environments:
+  name: Base Environment
+  meta:
+    id: env_8b9089ffb34f4bd5a726eeaf6af260de
+    created: 1788957976174
+    modified: 1788958212936
+    isPrivate: false
+  data:
+    TENANT: https://<yourdomain>.verify.ibm.com
+    ACTOR_CLIENT_ID: ""
+    AGENT_ID: ""
