@@ -18,7 +18,7 @@ collection:
       sortKey: -5500
     method: POST
     body:
-      mimeType: text/plain
+      mimeType: application/json
       text: |-
         {
           "client_name": "UC1 Course Conversational Agent",
@@ -30,7 +30,7 @@ collection:
         }
     headers:
       - name: Content-Type
-        value: text/plain
+        value: application/json
       - name: Authorization
         value: Bearer {{ADMIN_ACCESS_TOKEN}}
         description: ""
@@ -97,47 +97,41 @@ collection:
         send: true
         store: true
       rebuildPath: true
-  - url: "{{TENANT}}/oauth2/register/{{ACTOR_CLIENT_ID}}"
-    name: 05 - DCR - Associate Actor Client with Agent
+  - url: "{{TENANT}}/v1.0/applications/{{ACTOR_APPLICATION_ID}}"
+    name: 05 - Associate Actor Application with Agent
     meta:
       id: req_1fd812543d2347f5a5eb13a439af8b3d
       created: 1788354107150
       modified: 1788958110515
       isPrivate: false
-      description: ""
+      description: "Use the runtime application management ID. Requires manageAppAccessAdmin. HTTP 204 with no body is success. See README Step 6 for the OBO task association."
       sortKey: -5125
-    method: PUT
+    method: PATCH
     body:
-      mimeType: text/plain
+      mimeType: application/json-patch+json
       text: |-
-        {
-          "client_name": "UC1 Course Conversational Agent",
-          "grant_types": [
-            "client_credentials"
-          ],
-          "extension": {
-            "entity_id": "{{AGENT_ID}}",
-            "entity_type": "agent"
+        [
+          {
+            "op": "replace",
+            "path": "tags",
+            "value": [
+              "purpose=agent_id"
+            ]
           },
-          "scope": "agent.run",
-          "token_endpoint_auth_method": "client_secret_post"
-        }
+          {
+            "op": "add",
+            "path": "/providers/oidc/properties",
+            "value": {
+              "entityType": "agent",
+              "entityId": "{{AGENT_ID}}"
+            }
+          }
+        ]
     headers:
-      - name: Content-Type
-        value: text/plain
-        disabled: true
       - name: Authorization
         value: Bearer {{ADMIN_ACCESS_TOKEN}}
-        description: ""
-        disabled: false
-      - name: Accept
-        value: application/scim+json
-        description: ""
-        disabled: true
       - name: Content-Type
-        value: application/json
-        description: ""
-        disabled: false
+        value: application/json-patch+json
     authentication:
       type: none
     settings:
@@ -284,3 +278,4 @@ environments:
     TENANT: https://<yourdomain>.verify.ibm.com
     ACTOR_CLIENT_ID: ""
     AGENT_ID: ""
+    ACTOR_APPLICATION_ID: ""

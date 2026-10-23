@@ -30,6 +30,7 @@ class Settings:
     subject_scopes: str = os.getenv("SUBJECT_SCOPES", "openid profile email course.read course.enroll")
 
     # Actor client - registered AI agent runtime identity
+    agent_id: str = os.getenv("AGENT_ID", "").strip()
     actor_client_id: str = os.getenv("ACTOR_CLIENT_ID", "")
     actor_client_secret: str = os.getenv("ACTOR_CLIENT_SECRET", "")
     actor_scopes: str = os.getenv("ACTOR_SCOPES", "agent.run")
