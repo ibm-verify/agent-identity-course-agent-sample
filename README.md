@@ -1,8 +1,8 @@
 # Onboard & Secure a Conversational AI Agent with Direct Tool Integration
 
-| ⚠️ EARLY ACCESS PREVIEW ⚠️ |
+| ⚠️ General availability ⚠️ |
 | :--- |
-| Agent identity is under the Early Access Program (EAP) and for selected participants. Features and functionality are subject to change in the coming iterations. |
+| This demonstration uses generally available IBM Verify Agent Identity capabilities. Availability may vary by data center and tenant rollout. Confirm that the required capabilities are enabled in your tenant before starting |
 
 This sample demonstrates how to onboard a conversational AI agent as a governed **agent identity in IBM Verify** and secure agent interactions with business tools when the operation must run **on behalf of a signed-in human user**.
 
