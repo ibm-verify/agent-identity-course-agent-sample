@@ -1,8 +1,8 @@
 # Onboard & Secure a Conversational AI Agent with Direct Tool Integration
 
-| ⚠️ EARLY ACCESS PREVIEW ⚠️ |
+| ⚠️ General availability ⚠️ |
 | :--- |
-| Agent identity is under the Early Access Program (EAP) and for selected participants. Features and functionality are subject to change in the coming iterations. |
+| This demonstration uses generally available IBM Verify Agent Identity capabilities. Availability may vary by data center and tenant rollout. Confirm that the required capabilities are enabled in your tenant before starting |
 
 This sample demonstrates how to onboard a conversational AI agent as a governed **agent identity in IBM Verify** and secure agent interactions with business tools when the operation must run **on behalf of a signed-in human user**.
 
@@ -49,7 +49,7 @@ The resulting API call carries both **subject context** and **actor context**, a
 - Authenticate the human with Authorization Code + PKCE.
 - Authenticate the agent with Client Credentials.
 - Build operation-specific `authorization_details` for the tool selected by the AI agent.
-- Exchange the subject and actor tokens at IBM Verify STS.
+- Exchange the subject and actor tokens through IBM Verify to obtain a delegated access token.
 - Call a protected course tool/API with the delegated token.
 - Validate audience, actor, scope, and authorization details at the resource boundary.
 - Deny cross-user access in the sample even when the AI agent asks for it.
@@ -146,12 +146,14 @@ The numbered steps below correspond directly to the **Runtime sequence** diagram
 
 ## Prerequisites
 
+Before starting, read the IBM Agent Identity concepts articles and ensure you have a basic understanding of agent registration, runtime credentials and delegated access.
+
 - Python 3.10 or later.
 - An IBM Verify tenant with the OAuth/OIDC capabilities.
 - Permission to create or manage dynamic OAuth clients.
 - IBM Verify Agent Registry capability/API available in the target environment.
 - Permission to create/register an agent and associate an OAuth client.
-- Permission to configure an OIDC subject application, an STS/token-exchange client, scopes, audience, Authorization Details Type, and the required policy in the tenant.
+- Permission to configure an OIDC subject application, an token-exchange client, scopes, audience, Authorization Details Type, and the required policy in the tenant.
 - A Gemini API key only when `USE_LLM=true`. The sample can run with the deterministic parser by setting `USE_LLM=false`.
 
 ## Step 1 — Create an IBM Verify administrative API client
@@ -173,6 +175,7 @@ Configure the API client with the following entitlements:
 | **Configure AI agents** | `writeAgents` | Required to create and update the Agent Registry record used by this sample. |
 | **Manage AI agents** | `manageAgentStatus`| Review and manage AI agent status |
 | **Manage OIDC client registration dynamically** | `manageOidcDynamicClient` | Required to create the agent OAuth client through Dynamic Client Registration when DCR requires bearer-token authentication. |
+| **Manage application lifecycle** | `manageAppAccessAdmin` | Required to associate the runtime OAuth application with the registered agent. |
 | **Manage authorization detail types** | `manageAuthDetailTypes` | Create and manage the Authorization Details Type used by this sample. |
 | **Read Users** | `readUsers` | Read all users but not group memberships. |
 
@@ -354,35 +357,42 @@ export AGENT_ID="<agent-id>"
 
 ### Associate the OAuth application
 
+Associate the runtime application with the agent identity using the application management API.
+
 ### Using cURL
-```
-curl --request PUT "$TENANT/oauth2/register/$ACTOR_CLIENT_ID" \
+
+1. Open **Applications → Applications → UC1 Course Conversational Agent**.
+2. Confirm its OAuth client ID matches `ACTOR_CLIENT_ID` from Step 2.
+3. Copy the application's management ID from its details or browser address. For example, in a route containing `/applications/7201665295314100044`, copy `7201665295314100044`. The surrounding console route can vary.
+4. Set that value as `ACTOR_APPLICATION_ID` below.
+
+```bash
+export ACTOR_APPLICATION_ID="<application-management-id>"
+
+curl --include --fail-with-body --show-error \
+  --request PATCH "$TENANT/v1.0/applications/$ACTOR_APPLICATION_ID" \
   --header "Authorization: Bearer $ADMIN_ACCESS_TOKEN" \
-  --header "Content-Type: application/json" \
-  --data "$(envsubst < curl/payloads/actor-client-dcr-update.json)"  
+  --header "Content-Type: application/json-patch+json" \
+  --data "$(envsubst < curl/payloads/actor-application-associate.json)"
 ```
+
+Expected: **HTTP 204 with no response body**. The payload sets the `purpose=agent_id` tag and associates the application with `AGENT_ID`. The administrative API client requires **Manage application lifecycle**; obtain a fresh admin token after adding that entitlement. The supplied payload replaces application tags; retain other tags when adapting an existing application.
 
 ### Postman
 
-* Make sure you have ACTOR_CLIENT_ID and AGENT_ID set in environment<br>
-* Run **05 - DCR - Associate Actor Client with Agent**.
+* Set `ACTOR_APPLICATION_ID`, `AGENT_ID`, `TENANT` and `ADMIN_ACCESS_TOKEN`.
+* Run **05 - Associate Actor Application with Agent**.
 
 ### Insomnia
 
-* Make sure you have ACTOR_CLIENT_ID and AGENT_ID set in environment<br>
-* Run **05 - DCR - Associate Actor Client with Agent**.
-
+* Set the same values in the Base Environment.
+* Run **05 - Associate Actor Application with Agent**.
 
 ### With IBM Verify User Interface
 
-  To associate the OAuth application after the Agent has been created perform the below steps:
-
-1. Open the Agent in the IBM Verify administration console.
-2. Edit the Agent.
-3. Go to Identity & authentication.
-4. Select the OAuth application created in Step 2: UC1 Course Conversational Agent.
-5. Continue through the configuration and save the Agent.
-6. Reopen the Agent and verify that the OAuth application is shown under its identity and authentication configuration.
+1. Open the agent in the IBM Verify administration console and select **Edit**.
+2. Under **Agent identity**, select the runtime OAuth application created in Step 2 for **Generate agent identity token**.
+3. Save and reopen the agent to verify the selected application. This is the runtime identity association; configure the on-behalf-of task after creating the Token Exchange application in Step 6.
 
 ![Agent Actor Identity association](images/uc1-04-agent-actor-association.png)
 
@@ -518,11 +528,11 @@ This sample uses the OAuth may_act relationship for this validation.
 
    ```json
    {
-     "sub": "<actor-client-id>"
+     "sub": "<agent-id>"
    }
    ```
 
-   Replace `<actor-client-id>` with the `ACTOR_CLIENT_ID` recorded in Step 2.
+   Use the **AgentID** returned in Step 3 or shown under **Identities → AI agents → your agent**.
 
 5. Set the **Target attribute** to:
 
@@ -540,7 +550,7 @@ The custom rule produces the value of the `may_act` attribute. Conceptually, the
 ```json
 {
   "may_act": {
-    "sub": "<actor-client-id>"
+    "sub": "<agent-id>"
   }
 }
 ```
@@ -555,19 +565,19 @@ Subject access token
       |
       | may_act.sub
       |   =
-      | ACTOR_CLIENT_ID
+      | AGENT_ID
       v
 IBM Verify Token Exchange
       ^
       |
       | actor_token.sub
       |   =
-      | ACTOR_CLIENT_ID
+      | AGENT_ID
       |
 Actor access token
 ```
 
-> `ACTOR_CLIENT_ID` is the OAuth client ID of the **Agent OAuth application** created in Step 2. It is not the Agent Registry ID created in Step 3.
+> Set `AGENT_ID` in the local `.env` to the same AgentID used in this mapping. Keep the runtime OAuth credentials in `ACTOR_CLIENT_ID` and `ACTOR_CLIENT_SECRET`.
 
 ### Application entitlements
 
@@ -664,15 +674,15 @@ Applications → Authorization detail types
 9.   Click Create
 
 
-## Step 6 — Configure the STS / Token Exchange client
+## Step 6 — Configure the Token Exchange 
 
 Create an IBM Verify application for OAuth 2.0 Token Exchange as defined by RFC 8693.
 
-The Token Exchange application is used to authenticate the request to IBM Verify's Security Token Service (STS). It is separate from the agent OAuth application created in Step 2:
+The Token Exchange application is used to authenticate the request to IBM Verify. It is separate from the agent OAuth application created in Step 2:
 
 ### Create & Configure the OpenID connect for token exchange application
 
-### Create the STS client
+### Create the Token Exchange Application
 
 In the IBM Verify administration console:
 
@@ -873,6 +883,20 @@ In the IBM Verify administration console:
 
 8. Save the configuration.
 
+### Associate the on-behalf-of task
+
+1. Open **Identities → AI agents → your agent → Edit**.
+2. Open **Agent tasks** and select **Act on behalf of a user**.
+3. Select **UC1 Course Agent Token Exchange** and save.
+4. Confirm that the agent is **ACTIVE** and both associations are present:
+
+| Purpose | Application |
+|---|---|
+| Generate agent identity token | UC1 Course Conversational Agent |
+| Act on behalf of a user | UC1 Course Agent Token Exchange |
+
+The runtime application identifies the agent. The Token Exchange application handles the task performed on behalf of the user.
+
 ### Delegation validation
 
 The token exchange combines two identity contexts:
@@ -887,11 +911,12 @@ This prevents an arbitrary OAuth client from presenting a user's subject token a
 The Authorization Details Type configured in Step 5 provides the additional operation context used during the authorization decision.
 
 
-After the "UC1 Course Agent Token Exchange" application is created, open the application in IBM Verify and record the **STS_CLIENT_ID** and **STS_CLIENT_SECRET** value. These Value will be used in Step 7.
+After creating UC1 Course Agent Token Exchange, open the application in IBM Verify and record its Client ID and Client Secret. In Step 7, enter these values as STS_CLIENT_ID and STS_CLIENT_SECRET in .env.
+
 
 ```bash
-export STS_CLIENT_ID="<sts-client-id>"
-export STS_CLIENT_SECRET="<sts-client-secret>"
+export STS_CLIENT_ID="<token-exchange-application-client-id>"
+export STS_CLIENT_SECRET="<token-exchange-application-client-secret>"
 ```
 
 > Note : The client ID of the Token Exchange application needs to placed as STS_CLIENT_ID and respective SECRET in environment file
@@ -925,12 +950,13 @@ SUBJECT_CLIENT_SECRET=<subject-client-secret>
 SUBJECT_REDIRECT_URI=http://localhost:8000/callback
 SUBJECT_SCOPES=openid profile email course.read course.enroll
 
+AGENT_ID=<agent-id-from-step-3>
 ACTOR_CLIENT_ID=<actor-client-id-created-by-dcr>
 ACTOR_CLIENT_SECRET=<actor-client-secret-created-by-dcr>
 ACTOR_SCOPES=agent.run
 
-STS_CLIENT_ID=<sts-client-id>
-STS_CLIENT_SECRET=<sts-client-secret>
+export STS_CLIENT_ID="<token-exchange-application-client-id>"
+export STS_CLIENT_SECRET="<token-exchange-application-client-secret>"
 
 VERIFY_MANAGEMENT_CLIENT_ID=<same API client ID>
 VERIFY_MANAGEMENT_CLIENT_SECRET=<same API client secret>

@@ -73,19 +73,17 @@ def _validate_audience(claims: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _validate_actor(claims: Dict[str, Any]) -> Dict[str, Any]:
+    expected_actor = settings.agent_id
+    if not expected_actor:
+        return {"valid": False, "reason": "AGENT_ID is not configured"}
+
     act = claims.get("act")
+    actor_sub = act.get("sub") if isinstance(act, dict) else None
+    if not isinstance(actor_sub, str) or not actor_sub:
+        return {"valid": False, "reason": "Missing actor claim act.sub in delegated token"}
 
-    if not act:
-        return {"valid": False, "reason": "Missing actor claim 'act' in delegated token"}
-
-    expected_actor = settings.actor_client_id
-    actor_sub = None
-
-    if isinstance(act, dict):
-        actor_sub = act.get("sub") or act.get("client_id")
-
-    if expected_actor and actor_sub and actor_sub != expected_actor:
-        return {"valid": False, "reason": f"Invalid actor. Expected '{expected_actor}', token act.sub={actor_sub}"}
+    if actor_sub != expected_actor:
+        return {"valid": False, "reason": f"Invalid actor. Expected AgentID '{expected_actor}', token act.sub={actor_sub}"}
 
     return {"valid": True}
 

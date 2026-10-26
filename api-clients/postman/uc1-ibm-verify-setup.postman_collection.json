@@ -188,35 +188,33 @@
       "response": []
     },
     {
-      "name": "05 - DCR - Associate Actor Client with Agent",
+      "name": "05 - Associate Actor Application with Agent",
       "event": [
         {
           "listen": "test",
           "script": {
-            "exec": [
-              "const j=pm.response.json(); if (j.client_id) pm.collectionVariables.set(\"actor_client_id\", j.client_id); if (j.client_secret) pm.collectionVariables.set(\"actor_client_secret\", j.client_secret);"
-            ],
             "type": "text/javascript",
-            "packages": {},
-            "requests": {}
+            "exec": [
+              "pm.test(\"Application association accepted\", () => pm.response.to.have.status(204));"
+            ]
           }
         }
       ],
       "request": {
-        "method": "PUT",
+        "method": "PATCH",
         "header": [
           {
             "key": "Authorization",
-            "value": "Bearer {{admin_access_token}}"
+            "value": "Bearer {{ADMIN_ACCESS_TOKEN}}"
           },
           {
             "key": "Content-Type",
-            "value": "application/json"
+            "value": "application/json-patch+json"
           }
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"client_name\": \"UC1 Course Conversational Agent\",\n  \"grant_types\": [\n    \"client_credentials\"\n  ],\n  \"extension\": {\n    \"entity_id\": \"{{agent_id}}\",\n    \"entity_type\": \"agent\"\n  },\n  \"scope\": \"agent.run\",\n  \"token_endpoint_auth_method\": \"client_secret_post\"\n}",
+          "raw": "[\n  {\n    \"op\": \"replace\",\n    \"path\": \"tags\",\n    \"value\": [\n      \"purpose=agent_id\"\n    ]\n  },\n  {\n    \"op\": \"add\",\n    \"path\": \"/providers/oidc/properties\",\n    \"value\": {\n      \"entityType\": \"agent\",\n      \"entityId\": \"{{AGENT_ID}}\"\n    }\n  }\n]",
           "options": {
             "raw": {
               "language": "json"
@@ -224,16 +222,17 @@
           }
         },
         "url": {
-          "raw": "{{TENANT}}/oauth2/register/{{ACTOR_CLIENT_ID}}",
+          "raw": "{{TENANT}}/v1.0/applications/{{ACTOR_APPLICATION_ID}}",
           "host": [
             "{{TENANT}}"
           ],
           "path": [
-            "oauth2",
-            "register",
-            "{{ACTOR_CLIENT_ID}}"
+            "v1.0",
+            "applications",
+            "{{ACTOR_APPLICATION_ID}}"
           ]
-        }
+        },
+        "description": "Use the runtime application management ID. Requires manageAppAccessAdmin. Replaces tags; preserve additional tags as needed. HTTP 204 with no body is success. Configure Agent tasks \u2192 Act on behalf of a user with UC1 Course Agent Token Exchange in README Step 6."
       },
       "response": []
     },
@@ -450,6 +449,10 @@
     },
     {
       "key": "delegated_access_token",
+      "value": ""
+    },
+    {
+      "key": "ACTOR_APPLICATION_ID",
       "value": ""
     }
   ]
